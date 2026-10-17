@@ -462,8 +462,8 @@ export default function LabHome() {
           <Link href="/lab/withdraw" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
             출금
           </Link>
-          <Link href="/lab/aave" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
-            Aave pool
+          <Link href="/lab/defi-list" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
+            DeFi list
           </Link>
         </p>
       </fieldset>

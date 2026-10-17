@@ -7,6 +7,7 @@ import { supplyBaseUsdc, withdrawBaseUsdc } from "@/lib/aave/supply-base-usdc";
 import { createPaymasterFeeClient } from "@/lib/paymaster/fee-client";
 
 const fieldStyle = { border: "1px solid #888", padding: "0.5rem", marginTop: "0.25rem", width: "16rem" };
+const buttonStyle = { border: "1px solid #444", padding: "0.5rem 0.75rem", background: "#fff", cursor: "pointer" };
 
 export default function AavePage() {
   const { authenticated } = usePrivy();
@@ -108,7 +109,7 @@ export default function AavePage() {
             aria-label="Supply 수량"
             style={fieldStyle}
           />
-          <button type="submit" disabled={isSupplying}>
+          <button type="submit" disabled={isSupplying} style={buttonStyle}>
             Supply
           </button>
         </form>
@@ -121,7 +122,7 @@ export default function AavePage() {
             aria-label="Withdraw 수량"
             style={fieldStyle}
           />
-          <button type="submit" disabled={isWithdrawing}>
+          <button type="submit" disabled={isWithdrawing} style={buttonStyle}>
             Withdraw
           </button>
         </form>
