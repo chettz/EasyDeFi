@@ -8,9 +8,10 @@ export default function WalletShell({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const { ready, authenticated, login } = usePrivy();
   const isProductHome = pathname === "/product";
+  const isEarn = pathname === "/product/earn";
 
   return (
-    <div className="wallet-shell">
+    <div className={`wallet-shell${isEarn ? " wallet-shell-earn" : ""}`}>
       <header className="wallet-header">
         <strong>EasyDeFi</strong>
         {authenticated ? (

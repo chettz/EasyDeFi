@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getBaseUsdcSupplyApy } from "@/lib/aave/base-usdc-supply-apy";
 import { getMorphoVaultV2Apy } from "@/lib/morpho/vault-v2-apy";
 
@@ -44,8 +45,15 @@ export default async function DefiListPage() {
           {rows.map((row) => (
             <tr key={row[1]}>
               {row.map((value, index) => (
-                <td key={columns[index]} style={cellStyle}>
-                  {value}
+                <td key={columns[index]} style={{ ...cellStyle, padding: 0 }}>
+                  {/* Aave 행만 상세 페이지로 간다. */}
+                  {row[1] === "Aave" ? (
+                    <Link href="/lab/defi-list/aave" style={{ display: "block", padding: "0.5rem", color: "inherit" }}>
+                      {value}
+                    </Link>
+                  ) : (
+                    <span style={{ display: "block", padding: "0.5rem" }}>{value}</span>
+                  )}
                 </td>
               ))}
             </tr>

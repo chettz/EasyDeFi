@@ -19,7 +19,7 @@ const tabs: readonly Tab[] = [
     icon: "/figma/tab-home.svg",
     activeIcon: "/figma/tab-home-active.svg",
   },
-  { label: "예치", icon: "/figma/tab-history.svg" },
+  { label: "예치", href: "/product/earn", icon: "/figma/tab-history.svg", activeIcon: "/figma/tab-earn-active.svg" },
   {
     label: "입출금",
     href: "/product/transfer",

@@ -1,6 +1,5 @@
 /**
- * Morpho 볼트 2.0의 연 수익률만 읽는다.
- * 예치 트랜잭션은 보내지 않는다.
+ * vault address와 chainId를 입력하면 Morpho Vault V2 avgNetAPY를 리턴
  */
 
 // Morpho 상태 조회 url
@@ -14,7 +13,7 @@ const QUERY = `
   }
 `;
 
-// address : vauly address
+// address : vault address
 export async function getMorphoVaultV2Apy(address: string, chainId: number) {
   const response = await fetch(MORPHO_GRAPHQL, {
     method: "POST",
@@ -28,7 +27,6 @@ export async function getMorphoVaultV2Apy(address: string, chainId: number) {
   if (!response.ok) throw new Error("Morpho APY request failed.");
 
   const body = await response.json();
-  // avgNetApy는 비율이다. 0.047이면 4.7%다.
   const avgNetApy = body?.data?.vaultV2ByAddress?.avgNetApy;
   if (typeof avgNetApy !== "number" || !Number.isFinite(avgNetApy)) {
     throw new Error("Morpho APY was not returned.");

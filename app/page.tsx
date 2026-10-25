@@ -5,7 +5,6 @@ export default function EntryPage() {
     <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-5">
       <div className="text-center">
         <h1 className="text-3xl font-bold">EasyDeFi</h1>
-        <p className="mt-2 text-sm text-[#73737a]">이동할 화면을 선택해 주세요.</p>
       </div>
       <div className="flex w-full max-w-sm gap-3">
         <Link
