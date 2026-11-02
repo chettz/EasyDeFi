@@ -6,8 +6,8 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
-    // These client pages intentionally reset async wallet state when dependencies change.
-    files: ["app/lab/page.tsx", "features/withdraw/WithdrawFlow.tsx"],
+    // These files intentionally reset async wallet state when dependencies change.
+    files: ["app/lab/page.tsx", "features/withdraw/WithdrawFlow.tsx", "features/aave/use-supply-base-usdc.ts", "features/aave/use-withdraw-base-usdc.ts"],
     rules: {
       "react-hooks/set-state-in-effect": "off",
     },

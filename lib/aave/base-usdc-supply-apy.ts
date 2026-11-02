@@ -1,6 +1,5 @@
 /**
- * Aave Base USDC 풀의 공급 연 수익률만 읽는다.
- * 예치 트랜잭션은 보내지 않는다.
+ * Aave Base USDC 풀의 공급 연 수익률 조회
  */
 
 import { getTokenContract } from "../deposit/token-contracts";

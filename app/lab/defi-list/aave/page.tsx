@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { SupplyBaseUsdcForm } from "@/features/aave/SupplyBaseUsdcForm";
+import { WithdrawBaseUsdcForm } from "@/features/aave/WithdrawBaseUsdcForm";
 import { getBaseUsdcReserveDetail, type AaveApyWindow } from "@/lib/aave/base-usdc-reserve";
+import { getBaseUsdcSupplyApy } from "@/lib/aave/base-usdc-supply-apy";
 
 const windows: AaveApyWindow[] = ["1주", "1달", "6개월", "1년"];
 const cellStyle = { border: "1px solid #888", padding: "0.5rem", textAlign: "left" as const };
@@ -50,8 +53,15 @@ export default async function AaveReservePage({
   const window = isWindow(params.window) ? params.window : "1주";
 
   let detail: Awaited<ReturnType<typeof getBaseUsdcReserveDetail>> | null = null;
+  // 팝업은 이 값을 다시 요청하지 않는다. 화면을 열 때 받은 공급 연수익률을 그대로 넘긴다.
+  let supplyApy = "조회 실패";
   try {
     detail = await getBaseUsdcReserveDetail(window);
+  } catch (cause) {
+    console.error(cause);
+  }
+  try {
+    supplyApy = await getBaseUsdcSupplyApy();
   } catch (cause) {
     console.error(cause);
   }
@@ -59,7 +69,15 @@ export default async function AaveReservePage({
   return (
     <main style={{ maxWidth: 960, margin: "2rem auto", padding: "0 1rem" }}>
       <h1>Aave USDC 풀(Base)</h1>
-      <p style={{ display: "flex", gap: "0.5rem" }}>
+      <section style={{ border: "1px solid #888", padding: "1rem", marginTop: "1rem" }}>
+        <h2>USDC 넣기</h2>
+        <SupplyBaseUsdcForm supplyApy={supplyApy} />
+      </section>
+      <section style={{ border: "1px solid #888", padding: "1rem", marginTop: "1rem" }}>
+        <h2>USDC 꺼내기</h2>
+        <WithdrawBaseUsdcForm />
+      </section>
+      <p style={{ display: "flex", gap: "0.5rem", marginTop: "1.5rem" }}>
         {windows.map((label) => (
           <Link
             key={label}

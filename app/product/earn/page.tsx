@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { getBaseUsdcSupplyApy } from "@/lib/aave/base-usdc-supply-apy";
 import { getMorphoVaultV2Apy } from "@/lib/morpho/vault-v2-apy";
 
@@ -10,7 +11,7 @@ const products = [
   {
     id: "aave",
     protocol: "Aave",
-    name: "USDC pool",
+    name: "Aave Base USDC",
     logo: "/figma/aave-badge.svg",
     apyClassName: "earn-apy-aave",
   },
@@ -61,19 +62,32 @@ export default async function EarnPage() {
         {referenceTime && <p>{referenceTime}</p>}
       </div>
       <ul className="earn-list">
-        {products.map((product) => (
-          <li key={product.id} className="earn-card">
-            <div className="earn-badge-block">
-              <Image src={product.logo} alt="" width={40} height={40} unoptimized />
-              <span>{product.protocol}</span>
-            </div>
-            <div className="earn-product">
-              <strong>{product.name}</strong>
-              <span>체인 : Base</span>
-            </div>
-            <strong className={`earn-apy ${product.apyClassName}`}>{yields[product.id]}</strong>
-          </li>
-        ))}
+        {products.map((product) => {
+          const card = (
+            <>
+              <div className="earn-badge-block">
+                <Image src={product.logo} alt="" width={40} height={40} unoptimized />
+                <span>{product.protocol}</span>
+              </div>
+              <div className="earn-product">
+                <strong>{product.name}</strong>
+                <span>체인 : Base</span>
+              </div>
+              <strong className={`earn-apy ${product.apyClassName}`}>{yields[product.id]}</strong>
+            </>
+          );
+          return (
+            <li key={product.id}>
+              {product.id === "aave" ? (
+                <Link href="/product/earn/aave" className="earn-card">
+                  {card}
+                </Link>
+              ) : (
+                <div className="earn-card">{card}</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <p className="earn-disclaimer">
         표시된 연 수익률은 초 단위로 변해요.

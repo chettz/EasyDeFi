@@ -250,17 +250,54 @@ export type PendingWithdraw = {
   fee: string;
 };
 
+export type ConfirmRow = {
+  label: string;
+  value: string;
+};
+
 export function WithdrawConfirmModal({
   pending,
   isSending,
   onConfirm,
   onCancel,
+  title,
+  sendingTitle,
+  rows,
+  confirmLabel,
+  cancelLabel = "닫기",
+  warning,
+  confirmDisabled = false,
 }: {
   pending: PendingWithdraw;
   isSending: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  // 출금이 아닌 확인이면 제목·항목·버튼을 덮어쓴다. 없으면 출금 문구 그대로다.
+  title?: string;
+  sendingTitle?: string;
+  rows?: readonly ConfirmRow[];
+  confirmLabel?: string;
+  cancelLabel?: string;
+  warning?: string | null;
+  confirmDisabled?: boolean;
 }) {
+  const detailRows = rows ?? [
+    { label: "출금하는 수량", value: `${pending.amount} ${pending.token}` },
+    { label: "출금 주소", value: shortAddress(pending.to) },
+    { label: "출금 네트워크", value: pending.network },
+    { label: "수수료", value: pending.fee },
+  ];
+  const warningText =
+    warning === undefined ? (
+      <>
+        받는 주소와 네트워크가 맞는지 확인해 주세요.
+        <br />
+        <strong>확인을 누르면 되돌릴 수 없어요.</strong>
+      </>
+    ) : (
+      warning
+    );
+
   return (
     <div className="wallet-modal-backdrop" role="presentation">
       <div
@@ -270,25 +307,15 @@ export function WithdrawConfirmModal({
         aria-labelledby="withdraw-confirm-title"
       >
         <h2 id="withdraw-confirm-title">
-          {isSending ? `${pending.token}를 보내고 있어요` : "출금 전에 확인해 주세요"}
+          {isSending ? (sendingTitle ?? `${pending.token}를 보내고 있어요`) : (title ?? "출금 전에 확인해 주세요")}
         </h2>
         <dl className="wallet-detail-list">
-          <div className="wallet-detail-row">
-            <dt>출금하는 수량</dt>
-            <dd>{pending.amount} {pending.token}</dd>
-          </div>
-          <div className="wallet-detail-row">
-            <dt>출금 주소</dt>
-            <dd>{shortAddress(pending.to)}</dd>
-          </div>
-          <div className="wallet-detail-row">
-            <dt>출금 네트워크</dt>
-            <dd>{pending.network}</dd>
-          </div>
-          <div className="wallet-detail-row">
-            <dt>수수료</dt>
-            <dd>{pending.fee}</dd>
-          </div>
+          {detailRows.map((row) => (
+            <div key={row.label} className="wallet-detail-row">
+              <dt>{row.label}</dt>
+              <dd>{row.value}</dd>
+            </div>
+          ))}
         </dl>
         {isSending ? (
           <div className="wallet-sending" role="status">
@@ -297,19 +324,22 @@ export function WithdrawConfirmModal({
           </div>
         ) : (
           <>
-            <div className="wallet-warning">
-              <span>
-                받는 주소와 네트워크가 맞는지 확인해 주세요.
-                <br />
-                <strong>확인을 누르면 되돌릴 수 없어요.</strong>
-              </span>
-            </div>
+            {warningText && (
+              <div className="wallet-warning">
+                <span>{warningText}</span>
+              </div>
+            )}
             <div className="wallet-actions">
-              <button type="button" onClick={onConfirm} className="wallet-primary-button">
-                {pending.amount} {pending.token} 출금
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="wallet-primary-button"
+                disabled={confirmDisabled}
+              >
+                {confirmLabel ?? `${pending.amount} ${pending.token} 출금`}
               </button>
               <button type="button" onClick={onCancel} className="wallet-secondary-button">
-                닫기
+                {cancelLabel}
               </button>
             </div>
           </>

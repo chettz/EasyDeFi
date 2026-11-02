@@ -28,7 +28,7 @@ const tabs: readonly Tab[] = [
     wallet: true,
   },
   { label: "거래내역", icon: "/figma/tab-wallet.svg" },
-  { label: "내 자산", icon: "/figma/tab-transfer.svg" },
+  { label: "내 자산", href: "/product/assets", icon: "/figma/tab-transfer.svg" },
 ];
 
 export default function BottomTabBar() {
@@ -39,7 +39,11 @@ export default function BottomTabBar() {
       {tabs.map((tab) => {
         const active = tab.wallet
           ? ["/product/transfer", "/product/deposit", "/product/withdraw"].includes(pathname)
-          : tab.href === pathname;
+          : tab.href === "/product/earn"
+            ? pathname === "/product/earn" || pathname.startsWith("/product/earn/")
+            : tab.href === "/product/assets"
+              ? pathname === "/product/assets" || pathname.startsWith("/product/assets/")
+              : tab.href === pathname;
         const content = (
           <>
             <Image
