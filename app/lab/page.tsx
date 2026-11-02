@@ -465,6 +465,9 @@ export default function LabHome() {
           <Link href="/lab/defi-list" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
             DeFi list
           </Link>
+          <Link href="/lab/assets" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
+            내 자산
+          </Link>
         </p>
       </fieldset>
 
