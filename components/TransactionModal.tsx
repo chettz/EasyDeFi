@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import { formatEther, formatUnits, type Address } from "viem";
 import type { Erc20PaymasterCall, Erc20PaymasterFeePreview } from "../lib/parse-erc20-paymaster-fee";
 
@@ -253,6 +254,7 @@ export type PendingWithdraw = {
 export type ConfirmRow = {
   label: string;
   value: string;
+  boxed?: boolean;
 };
 
 export function WithdrawConfirmModal({
@@ -267,6 +269,7 @@ export function WithdrawConfirmModal({
   cancelLabel = "닫기",
   warning,
   confirmDisabled = false,
+  contained = false,
 }: {
   pending: PendingWithdraw;
   isSending: boolean;
@@ -280,6 +283,7 @@ export function WithdrawConfirmModal({
   cancelLabel?: string;
   warning?: string | null;
   confirmDisabled?: boolean;
+  contained?: boolean;
 }) {
   const detailRows = rows ?? [
     { label: "출금하는 수량", value: `${pending.amount} ${pending.token}` },
@@ -298,10 +302,10 @@ export function WithdrawConfirmModal({
       warning
     );
 
-  return (
-    <div className="wallet-modal-backdrop" role="presentation">
+  const dialog = (
+    <div className={contained ? "wallet-modal-backdrop move-backdrop" : "wallet-modal-backdrop"} role="presentation">
       <div
-        className="wallet-modal"
+        className={contained ? "wallet-modal move-modal" : "wallet-modal"}
         role="dialog"
         aria-modal="true"
         aria-labelledby="withdraw-confirm-title"
@@ -311,7 +315,7 @@ export function WithdrawConfirmModal({
         </h2>
         <dl className="wallet-detail-list">
           {detailRows.map((row) => (
-            <div key={row.label} className="wallet-detail-row">
+            <div key={row.label} className={row.boxed ? "wallet-detail-row move-row-box" : "wallet-detail-row"}>
               <dt>{row.label}</dt>
               <dd>{row.value}</dd>
             </div>
@@ -319,7 +323,7 @@ export function WithdrawConfirmModal({
         </dl>
         {isSending ? (
           <div className="wallet-sending" role="status">
-            <Image src="/figma/loading.svg" alt="" width={22} height={22} />
+            <Image src={contained ? "/figma/move-loading.svg" : "/figma/loading.svg"} alt="" width={22} height={22} />
             <span>보통 몇 초에서 수십 초 걸려요</span>
           </div>
         ) : (
@@ -347,4 +351,8 @@ export function WithdrawConfirmModal({
       </div>
     </div>
   );
+  const shell = contained && typeof document !== "undefined"
+    ? document.querySelector<HTMLElement>(".wallet-shell")
+    : null;
+  return shell ? createPortal(dialog, shell) : dialog;
 }

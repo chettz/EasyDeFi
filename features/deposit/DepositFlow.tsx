@@ -4,9 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { ChoiceField } from "@/features/deposit/ChoiceField";
+import { ChoiceMark } from "@/features/deposit/choice-mark";
 import { useDepositAccounts } from "@/hooks/useDepositAccounts";
 import { getDepositAddress } from "@/lib/deposit/deposit-address";
-import { TOKEN_NETWORKS, type DepositNetwork, type DepositToken } from "@/lib/deposit/networks";
+import {
+  depositNetworkLabel,
+  TOKEN_NETWORKS,
+  type DepositNetwork,
+  type DepositToken,
+} from "@/lib/deposit/networks";
 
 const labFieldStyle = {
   width: "100%",
@@ -20,6 +27,8 @@ export function DepositFlow({ variant = "product" }: { variant?: "lab" | "produc
   const [token, setToken] = useState<DepositToken>("USDC");
   const [network, setNetwork] = useState<DepositNetwork>("이더리움");
   const [copied, setCopied] = useState(false);
+  const [tokenOpen, setTokenOpen] = useState(false);
+  const [networkOpen, setNetworkOpen] = useState(false);
   const networks = TOKEN_NETWORKS[token];
   const depositAddress = getDepositAddress(network, accounts);
 
@@ -95,68 +104,55 @@ export function DepositFlow({ variant = "product" }: { variant?: "lab" | "produc
     );
   }
 
+  const networkLabel = depositNetworkLabel(network);
+
   return (
-    <main className="wallet-page">
+    <main className="wallet-page move-page">
       <div className="wallet-title-row">
         <Link href="/product/transfer" className="wallet-back" aria-label="입출금으로 돌아가기">
-          <Image src="/figma/chevron-down.svg" alt="" width={24} height={24} />
+          <Image src="/figma/move-back.svg" alt="" width={24} height={24} />
         </Link>
         <h1>입금</h1>
       </div>
       <p className="wallet-description">
         토큰과 네트워크를 고르면 이 주소로 입금할 수 있어요.
       </p>
-      <div className="wallet-field">
-        <label htmlFor="deposit-token">입금할 토큰</label>
-        <select
-          id="deposit-token"
-          value={token}
-          onChange={(event) => onTokenChange(event.target.value as DepositToken)}
-        >
-          <option value="USDC">USDC</option>
-          <option value="USDT">USDT</option>
-        </select>
-      </div>
-      <div className="wallet-field">
-        <label htmlFor="deposit-network">네트워크</label>
-        <select
-          id="deposit-network"
-          value={network}
-          onChange={(event) => setNetwork(event.target.value as DepositNetwork)}
-        >
-          {networks.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-      </div>
+      <ChoiceField
+        label="입금할 토큰"
+        selectedId={token}
+        options={[
+          { id: "USDC", label: "USDC", icon: <ChoiceMark token="USDC" /> },
+          { id: "USDT", label: "USDT", icon: <ChoiceMark token="USDT" /> },
+        ]}
+        open={tokenOpen}
+        onOpenChange={(open) => {
+          setTokenOpen(open);
+          if (open) setNetworkOpen(false);
+        }}
+        onSelect={(id) => onTokenChange(id as DepositToken)}
+      />
+      <ChoiceField
+        label="네트워크"
+        selectedId={network}
+        options={networks.map((item) => ({
+          id: item,
+          label: depositNetworkLabel(item),
+          icon: <ChoiceMark network={item} />,
+        }))}
+        open={networkOpen}
+        onOpenChange={(open) => {
+          setNetworkOpen(open);
+          if (open) setTokenOpen(false);
+        }}
+        onSelect={(id) => setNetwork(id as DepositNetwork)}
+      />
       <div className="wallet-warning">
         <span>
-          <strong>꼭 {network} 네트워크로 보내주세요.</strong>
+          <strong>꼭 {networkLabel} 네트워크로 보내주세요.</strong>
           <br />
-          다른 네트워크로 보내면 되찾을 수 없어요. 본인 명의 거래소 계정에서만
-          보내주세요.
+          다른 네트워크로 보내면 되찾을 수 없어요.
         </span>
       </div>
-      <section className="wallet-qr" aria-label="입금 주소 QR 코드">
-        {depositAddress ? (
-          <>
-            <QRCodeSVG
-              value={depositAddress}
-              size={112}
-              bgColor="#ffffff"
-              fgColor="#1f1f24"
-              title={`${network} ${token} 입금 주소`}
-            />
-            <p className="wallet-helper">거래소 앱에서 QR을 찍어도 돼요</p>
-          </>
-        ) : (
-          <p className="wallet-helper" role="status">
-            {isLoading ? "입금 주소를 준비하고 있어요." : "입금 주소를 확인하지 못했어요."}
-          </p>
-        )}
-      </section>
       <div className="wallet-address-box">
         <div>
           <span className="wallet-field-label">입금 주소</span>
@@ -171,7 +167,7 @@ export function DepositFlow({ variant = "product" }: { variant?: "lab" | "produc
           onClick={() => void onCopyAddress()}
           aria-label={copied ? "주소 복사 완료" : "입금 주소 복사"}
         >
-          <Image src="/figma/copy.svg" alt="" width={20} height={20} />
+          <Image src="/figma/move-copy.svg" alt="" width={20} height={20} />
         </button>
       </div>
       {copied && (
@@ -179,6 +175,25 @@ export function DepositFlow({ variant = "product" }: { variant?: "lab" | "produc
           주소를 복사했어요.
         </p>
       )}
+      <section className="wallet-qr" aria-label="입금 주소 QR 코드">
+        {depositAddress ? (
+          <>
+            <QRCodeSVG
+              value={depositAddress}
+              size={112}
+              bgColor="#ffffff"
+              fgColor="#191f28"
+              title={`${networkLabel} ${token} 입금 주소`}
+            />
+            <p className="wallet-helper">거래소 앱에서 QR을 찍어도 돼요</p>
+          </>
+        ) : (
+          <p className="wallet-helper" role="status">
+            {isLoading ? "입금 주소를 준비하고 있어요." : "입금 주소를 확인하지 못했어요."}
+          </p>
+        )}
+      </section>
+      <p className="move-guide">거래소에서 보내는 방법 ›</p>
     </main>
   );
 }

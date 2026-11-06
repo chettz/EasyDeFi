@@ -19,13 +19,20 @@ import {
   WithdrawConfirmModal,
   type PendingWithdraw,
 } from "@/components/TransactionModal";
+import { ChoiceField } from "@/features/deposit/ChoiceField";
+import { ChoiceMark } from "@/features/deposit/choice-mark";
 import {
   WithdrawFailure,
   WithdrawSuccess,
   type CompletedWithdraw,
 } from "@/features/withdraw/WithdrawResult";
 import { getDepositAddress } from "@/lib/deposit/deposit-address";
-import { TOKEN_NETWORKS, type DepositNetwork, type DepositToken } from "@/lib/deposit/networks";
+import {
+  depositNetworkLabel,
+  TOKEN_NETWORKS,
+  type DepositNetwork,
+  type DepositToken,
+} from "@/lib/deposit/networks";
 import { getTokenContract } from "@/lib/deposit/token-contracts";
 import { getDepositTokenBalance } from "@/lib/withdraw/token-balance";
 import { quoteTransferFee } from "@/lib/withdraw/quote-transfer-fee";
@@ -142,6 +149,8 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
   const [failedWithdraw, setFailedWithdraw] = useState<PendingWithdraw | null>(null);
   const [failureMessage, setFailureMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [tokenOpen, setTokenOpen] = useState(false);
+  const [networkOpen, setNetworkOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const networks = TOKEN_NETWORKS[token];
   const depositAddress = getDepositAddress(network, accounts);
@@ -973,43 +982,49 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
     );
   }
 
+  const feeCaption = /^\d/.test(feeText) ? `약 ${feeText}` : feeText;
+
   return (
-    <main className="wallet-page">
+    <main className="wallet-page move-page">
       <div className="wallet-title-row">
         <Link href="/product/transfer" className="wallet-back" aria-label="입출금으로 돌아가기">
-          <Image src="/figma/chevron-down.svg" alt="" width={24} height={24} />
+          <Image src="/figma/move-back.svg" alt="" width={24} height={24} />
         </Link>
         <h1>출금</h1>
       </div>
       <p className="wallet-description">
-        내 다른 지갑이나 본인 거래소 계정으로 {token}를 보내요.
+        내 다른 지갑이나 본인 거래소 계정으로 토큰을 보내요.
       </p>
-      <form onSubmit={onSubmit} className="wallet-page" style={{ padding: 0 }}>
-        <div className="wallet-field">
-          <label htmlFor="withdraw-token">출금할 토큰</label>
-          <select
-            id="withdraw-token"
-            value={token}
-            onChange={(event) => onTokenChange(event.target.value as DepositToken)}
-          >
-            <option value="USDC">USDC</option>
-            <option value="USDT">USDT</option>
-          </select>
-        </div>
-        <div className="wallet-field">
-          <label htmlFor="withdraw-network">출금할 네트워크</label>
-          <select
-            id="withdraw-network"
-            value={network}
-            onChange={(event) => setNetwork(event.target.value as DepositNetwork)}
-          >
-            {networks.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </div>
+      <form onSubmit={onSubmit} className="move-form">
+        <ChoiceField
+          label="출금할 토큰"
+          selectedId={token}
+          options={[
+            { id: "USDC", label: "USDC", icon: <ChoiceMark token="USDC" /> },
+            { id: "USDT", label: "USDT", icon: <ChoiceMark token="USDT" /> },
+          ]}
+          open={tokenOpen}
+          onOpenChange={(open) => {
+            setTokenOpen(open);
+            if (open) setNetworkOpen(false);
+          }}
+          onSelect={(id) => onTokenChange(id as DepositToken)}
+        />
+        <ChoiceField
+          label="출금할 네트워크"
+          selectedId={network}
+          options={networks.map((item) => ({
+            id: item,
+            label: depositNetworkLabel(item),
+            icon: <ChoiceMark network={item} />,
+          }))}
+          open={networkOpen}
+          onOpenChange={(open) => {
+            setNetworkOpen(open);
+            if (open) setTokenOpen(false);
+          }}
+          onSelect={(id) => setNetwork(id as DepositNetwork)}
+        />
         <div className="wallet-field">
           <label htmlFor="withdraw-recipient">출금할 주소</label>
           <input
@@ -1040,7 +1055,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
           onClick={() => void onMaxAmount()}
           disabled={!canQuoteMax || isMaxQuoting || isBalanceLoading}
         >
-          최대 {balanceText} {token}까지 보낼 수 있어요 · 수수료 {feeText}
+          최대 {balanceText} {token}까지 보낼 수 있어요 · 수수료 {feeCaption}
         </button>
         {isUnsupportedSolana && (
           <p className="wallet-alert" role="alert">
@@ -1077,7 +1092,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
         </div>
         <button
           type="submit"
-          className="wallet-primary-button"
+          className="move-pill"
           disabled={
             isUnsupportedSolana ||
             isBalanceLoading ||
@@ -1096,6 +1111,22 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
         <WithdrawConfirmModal
           pending={pendingWithdraw}
           isSending={isSending}
+          contained
+          rows={[
+            { label: "출금하는 수량", value: `${pendingWithdraw.amount} ${pendingWithdraw.token}` },
+            {
+              label: "출금 주소",
+              value: pendingWithdraw.to.length > 12
+                ? `${pendingWithdraw.to.slice(0, 6)}…${pendingWithdraw.to.slice(-4)}`
+                : pendingWithdraw.to,
+              boxed: true,
+            },
+            { label: "출금 네트워크", value: depositNetworkLabel(pendingWithdraw.network) },
+            {
+              label: "수수료",
+              value: /^\d/.test(pendingWithdraw.fee) ? `약 ${pendingWithdraw.fee}` : pendingWithdraw.fee,
+            },
+          ]}
           onConfirm={() => void onConfirmWithdraw()}
           onCancel={() => {
             setPendingWithdraw(null);
