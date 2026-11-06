@@ -4,6 +4,8 @@ import { WithdrawBaseUsdcForm } from "@/features/aave/WithdrawBaseUsdcForm";
 import { getBaseUsdcReserveDetail, type AaveApyWindow } from "@/lib/aave/base-usdc-reserve";
 import { getBaseUsdcSupplyApy } from "@/lib/aave/base-usdc-supply-apy";
 
+export const dynamic = "force-dynamic";
+
 const windows: AaveApyWindow[] = ["1주", "1달", "6개월", "1년"];
 const cellStyle = { border: "1px solid #888", padding: "0.5rem", textAlign: "left" as const };
 

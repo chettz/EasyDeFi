@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getBaseUsdcSupplyApy } from "@/lib/aave/base-usdc-supply-apy";
 import { getMorphoVaultV2Apy } from "@/lib/morpho/vault-v2-apy";
 
+export const dynamic = "force-dynamic";
+
 const STEAKHOUSE_PRIME_USDC = "0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9";
 const BASE_CHAIN_ID = 8453;
 const FAILED_APY = "조회 실패";

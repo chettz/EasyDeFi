@@ -97,23 +97,29 @@ export default function PortfolioProductPage({ params }: { params: Promise<{ pro
 
   useEffect(() => {
     if (!product || !authenticated || isLoading) return;
+    const selectedProduct = product;
     const owner = getDepositAddress("base", accounts);
-    if (!owner) {
-      setHistory(null);
-      setFailed(true);
-      return;
-    }
     let cancelled = false;
-    setFailed(false);
-    setHistory(null);
-    getPositionHistory(product, owner, period)
-      .then((loaded) => {
+
+    async function load() {
+      await Promise.resolve();
+      if (cancelled) return;
+      setFailed(false);
+      setHistory(null);
+      if (!owner) {
+        setFailed(true);
+        return;
+      }
+      try {
+        const loaded = await getPositionHistory(selectedProduct, owner, period);
         if (!cancelled) setHistory(loaded);
-      })
-      .catch((cause: unknown) => {
+      } catch (cause) {
         console.error(cause);
         if (!cancelled) setFailed(true);
-      });
+      }
+    }
+
+    void load();
     return () => {
       cancelled = true;
     };

@@ -1,6 +1,8 @@
 import { getBaseUsdcSupplyApy } from "@/lib/aave/base-usdc-supply-apy";
 import { AaveSupplyScreen } from "./supply-screen";
 
+export const dynamic = "force-dynamic";
+
 function formatReferenceTime(date: Date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul",

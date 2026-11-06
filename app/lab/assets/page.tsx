@@ -96,12 +96,14 @@ export default function AssetsPage() {
           .filter((item) => item.known && item.amount > BigInt(0))
           .map(({ token, amount }) => ({ token, amount })),
       );
-      setPositions(
-        [
-          typeof aave === "bigint" && aave > BigInt(0) ? { id: "aave", name: PORTFOLIO_PRODUCTS.aave, amount: aave } : null,
-          typeof morpho === "bigint" && morpho > BigInt(0) ? { id: "morpho", name: PORTFOLIO_PRODUCTS.morpho, amount: morpho } : null,
-        ].filter((item): item is Position => item !== null),
-      );
+      const nextPositions: Position[] = [];
+      if (typeof aave === "bigint" && aave > BigInt(0)) {
+        nextPositions.push({ id: "aave", name: PORTFOLIO_PRODUCTS.aave, amount: aave });
+      }
+      if (typeof morpho === "bigint" && morpho > BigInt(0)) {
+        nextPositions.push({ id: "morpho", name: PORTFOLIO_PRODUCTS.morpho, amount: morpho });
+      }
+      setPositions(nextPositions);
     });
 
     return () => {

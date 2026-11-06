@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getBaseUsdcSupplyApy } from "@/lib/aave/base-usdc-supply-apy";
 import { getMorphoVaultV2Apy } from "@/lib/morpho/vault-v2-apy";
 
+export const dynamic = "force-dynamic";
+
 const columns = ["자산", "DeFi 프로토콜", "체인", "운용방식", "연 수익률"];
 const cellStyle = { border: "1px solid #888", padding: "0.5rem", textAlign: "left" as const };
 // Steakhouse Prime USDC. Morpho 볼트 2.0이고 Base(8453)에 있다.

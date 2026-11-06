@@ -3,6 +3,8 @@ import { getBaseUsdcReserveDetail } from "@/lib/aave/base-usdc-reserve";
 import { getBaseUsdcSupplyApy } from "@/lib/aave/base-usdc-supply-apy";
 import { AaveYieldHero } from "./yield-hero";
 
+export const dynamic = "force-dynamic";
+
 const FAILED = "조회 실패";
 
 const yieldSteps = [
