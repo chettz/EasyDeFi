@@ -9,6 +9,7 @@ import { getDepositAddress } from "@/lib/deposit/deposit-address";
 import { createPaymasterFeeClient, type PaymasterFeeClient } from "@/lib/paymaster/fee-client";
 import { getPaymasterToken } from "@/lib/paymaster/tokens";
 import { getDepositTokenBalance } from "@/lib/withdraw/token-balance";
+import { recordAaveActivity } from "@/features/transactions/record-aave-activity";
 
 const BASE_USDC = getPaymasterToken("base", "USDC");
 // 출금 화면과 같은 문구. 수량과 수수료의 합이 잔액을 넘을 때 쓴다.
@@ -51,7 +52,7 @@ function readErrorCode(cause: unknown) {
 }
 
 export function useSupplyBaseUsdc(supplyApy: string) {
-  const { authenticated, login, ready } = usePrivy();
+  const { authenticated, login, ready, getAccessToken } = usePrivy();
   const { accounts, embeddedWallet, walletsReady } = useDepositAccounts();
   const depositAddress = getDepositAddress("base", accounts);
   const [feeClient, setFeeClient] = useState<PaymasterFeeClient | null | undefined>(undefined);
@@ -258,9 +259,17 @@ export function useSupplyBaseUsdc(supplyApy: string) {
 
     setIsSupplying(true);
     try {
-      const received = await supplyBaseUsdc({ client: feeClient, amount });
-      const receivedTokenValue = received
-        ? { amount: formatUnits(received.amount, received.decimals), symbol: received.symbol }
+      const result = await supplyBaseUsdc({ client: feeClient, amount });
+      try {
+        await recordAaveActivity("SUPPLY", result.hash, getAccessToken);
+      } catch (cause) {
+        console.error(cause);
+      }
+      const receivedTokenValue = result.received
+        ? {
+            amount: formatUnits(result.received.amount, result.received.decimals),
+            symbol: result.received.symbol,
+          }
         : null;
       setSupplyAmount("");
       setPendingSupply(null);

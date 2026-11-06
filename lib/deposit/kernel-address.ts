@@ -88,3 +88,20 @@ export async function getBaseKernelAddresses(request: EthereumRequest) {
   const [baseAddress, baseSepoliaAddress] = await loadKernelAddresses(BASE_CHAINS, request);
   return { base: baseAddress, baseSepolia: baseSepoliaAddress };
 }
+
+// 서버는 사용자의 signer를 갖지 않는다. Privy가 확인한 EOA 주소만 accounts 요청으로
+// 돌려줘도 Kernel의 CREATE2 주소는 서명 없이 같은 방식으로 계산할 수 있다.
+export async function getKernelAddressesFromOwner(owner: Address) {
+  const request = (async ({ method }: { method: string }) => {
+    if (method === "eth_requestAccounts" || method === "eth_accounts") return [owner];
+    throw new Error(`Unsupported owner request: ${method}`);
+  }) as EthereumRequest;
+
+  const [ethereum, arcAddresses, baseAddresses] = await Promise.all([
+    getEthereumKernelAddresses(request),
+    getArcKernelAddresses(request),
+    getBaseKernelAddresses(request),
+  ]);
+
+  return { ...ethereum, ...arcAddresses, ...baseAddresses };
+}

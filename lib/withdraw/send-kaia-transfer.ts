@@ -142,5 +142,5 @@ export async function sendKaiaTransfer(parameters: {
   await client.waitForTransactionReceipt({ hash: transferHash });
 
   // 실제 수수료는 스왑에 넣은 USDT다.
-  return { hash: transferHash, gas: prepared.amountIn };
+  return { hash: transferHash, gas: prepared.amountIn, feeHash: swapHash };
 }

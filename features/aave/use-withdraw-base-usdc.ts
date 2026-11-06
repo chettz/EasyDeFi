@@ -8,6 +8,7 @@ import { getBaseUsdcWithdrawable, quoteWithdrawBaseUsdcFee, withdrawBaseUsdc } f
 import { getDepositAddress } from "@/lib/deposit/deposit-address";
 import { createPaymasterFeeClient, type PaymasterFeeClient } from "@/lib/paymaster/fee-client";
 import { getPaymasterToken } from "@/lib/paymaster/tokens";
+import { recordAaveActivity } from "@/features/transactions/record-aave-activity";
 
 const BASE_USDC = getPaymasterToken("base", "USDC");
 
@@ -47,7 +48,7 @@ function readErrorCode(cause: unknown) {
 }
 
 export function useWithdrawBaseUsdc() {
-  const { authenticated, login, ready } = usePrivy();
+  const { authenticated, login, ready, getAccessToken } = usePrivy();
   const { accounts, embeddedWallet, walletsReady } = useDepositAccounts();
   const depositAddress = getDepositAddress("base", accounts);
   const [feeClient, setFeeClient] = useState<PaymasterFeeClient | null | undefined>(undefined);
@@ -229,8 +230,13 @@ export function useWithdrawBaseUsdc() {
       window.setTimeout(resolve, 0);
     });
     try {
-      const received = await withdrawBaseUsdc({ client: feeClient, amount });
-      const withdrawn = formatUnits(received ?? amount, BASE_USDC?.decimals ?? 6);
+      const result = await withdrawBaseUsdc({ client: feeClient, amount });
+      try {
+        await recordAaveActivity("REDEEM", result.hash, getAccessToken);
+      } catch (cause) {
+        console.error(cause);
+      }
+      const withdrawn = formatUnits(result.received ?? amount, BASE_USDC?.decimals ?? 6);
       setWithdrawAmount("");
       setPendingWithdraw(null);
       setBalanceVersion((version) => version + 1);

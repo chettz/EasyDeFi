@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["pino", "thread-stream"],
   async redirects() {
     return [
       { source: "/transfer", destination: "/product/transfer", permanent: false },

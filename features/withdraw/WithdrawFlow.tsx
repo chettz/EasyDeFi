@@ -26,6 +26,7 @@ import {
   WithdrawSuccess,
   type CompletedWithdraw,
 } from "@/features/withdraw/WithdrawResult";
+import { recordWithdrawActivity } from "@/features/transactions/record-withdraw-activity";
 import { getDepositAddress } from "@/lib/deposit/deposit-address";
 import {
   depositNetworkLabel,
@@ -120,7 +121,7 @@ function parseWithdrawAmount(value: string): bigint | null {
 }
 
 export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "product" }) {
-  const { authenticated } = usePrivy();
+  const { authenticated, getAccessToken } = usePrivy();
   const { accounts, embeddedWallet, walletsReady } = useDepositAccounts();
   const [token, setToken] = useState<DepositToken>("USDC");
   const [network, setNetwork] = useState<DepositNetwork>("이더리움");
@@ -631,14 +632,19 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
   // 확인을 누르면 페이마스터, 아크, 카이아를 전송한다. 솔라나는 아직 보내지 않는다.
   async function onConfirmWithdraw(request = pendingWithdraw) {
     if (!request || isSending) return;
-    const networkName = request.network;
     const parsed = parseWithdrawAmount(request.amount);
-    if (parsed === null || !isAddress(request.to)) {
+    if (
+      parsed === null ||
+      !isAddress(request.to) ||
+      !isDepositNetwork(request.network) ||
+      (request.token !== "USDC" && request.token !== "USDT")
+    ) {
       setPendingWithdraw(null);
       setIsSending(false);
       setError("전송을 시작하지 못했습니다.");
       return;
     }
+    const networkName = request.network;
     const recipient = request.to;
     const sentToken = request.token;
     const amountToSend = parsed;
@@ -653,7 +659,22 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
     setFailedWithdraw(null);
     setPendingWithdraw(request);
 
-    async function finish(gas: bigint | null) {
+    async function finish(hash: Hash, gas: bigint | null, feeHash?: Hash) {
+      try {
+        await recordWithdrawActivity(
+          {
+            network: networkName,
+            token: sentToken,
+            txHash: hash,
+            feeTxHash: feeHash,
+            recipient,
+            amount: amountToSend,
+          },
+          getAccessToken,
+        );
+      } catch (cause) {
+        console.error(cause);
+      }
       setCompletedWithdraw({
         recipient,
         amount: amountToSend,
@@ -684,13 +705,13 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
       setError(null);
       setIsSending(true);
       try {
-        const { gas } = await sendPaymasterTransfer({
+        const { hash, gas } = await sendPaymasterTransfer({
           client: handle,
           token: paymasterToken.address,
           recipient,
           amount: parsed,
         });
-        await finish(gas);
+        await finish(hash, gas);
       } catch (cause) {
         console.error(cause);
         failTransfer();
@@ -711,8 +732,8 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
       setIsSending(true);
       try {
         // 받는 주소로 네이티브 USDC value를 보낸다. 페이마스터는 쓰지 않는다.
-        const { gas } = await sendArcTransfer({ client: handle, recipient, amount: parsed });
-        await finish(gas);
+        const { hash, gas } = await sendArcTransfer({ client: handle, recipient, amount: parsed });
+        await finish(hash, gas);
       } catch (cause) {
         console.error(cause);
         failTransfer();
@@ -733,7 +754,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
       setIsSending(true);
       try {
         // 라우터 승인과 USDT 스왑 뒤에, 같은 EOA에서 USDT를 보낸다.
-        const { gas } = await sendKaiaTransfer({
+        const { hash, gas, feeHash } = await sendKaiaTransfer({
           network: networkName,
           sender,
           recipient,
@@ -803,7 +824,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
             return hash as Hash;
           },
         });
-        await finish(gas);
+        await finish(hash, gas, feeHash);
       } catch (cause) {
         console.error(cause);
         failTransfer();

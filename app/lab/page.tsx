@@ -468,6 +468,9 @@ export default function LabHome() {
           <Link href="/lab/assets" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
             내 자산
           </Link>
+          <Link href="/lab/transactions" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
+            거래내역
+          </Link>
         </p>
       </fieldset>
 

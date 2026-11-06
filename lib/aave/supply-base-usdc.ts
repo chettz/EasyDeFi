@@ -121,10 +121,13 @@ export async function supplyBaseUsdc(parameters: { client: PaymasterFeeClient; a
   });
   // 공급은 이미 끝났다. 받은 토큰을 영수증에서 못 읽어도 공급 실패로 되돌리지 않는다.
   try {
-    return await readMintedAToken({ client: parameters.client, hash, kernel });
+    return {
+      hash,
+      received: await readMintedAToken({ client: parameters.client, hash, kernel }),
+    };
   } catch (cause) {
     console.error(cause);
-    return null;
+    return { hash, received: null };
   }
 }
 
@@ -229,9 +232,12 @@ export async function withdrawBaseUsdc(parameters: { client: PaymasterFeeClient;
   });
   // 인출은 이미 끝났다. 받은 수량을 영수증에서 못 읽어도 인출 실패로 되돌리지 않는다.
   try {
-    return await readWithdrawnUsdc({ client: parameters.client, hash, usdc: usdc.address, kernel });
+    return {
+      hash,
+      received: await readWithdrawnUsdc({ client: parameters.client, hash, usdc: usdc.address, kernel }),
+    };
   } catch (cause) {
     console.error(cause);
-    return null;
+    return { hash, received: null };
   }
 }
