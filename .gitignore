@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 pimlico_url.md
+DESIGN.md
+.agents/
+skills-lock.json
