@@ -1,5 +1,6 @@
 # Architecture Decision Records
 
+
 중요 아키텍처 결정 별로 문서를 생성한다. 확정된 ADR은 고치지 않고, 수정사항이 생기면 새 ADR을 쓴 뒤 예전 ADR의 상태만 `대체됨`으로 바꾼다.
 
 | 번호 | 제목 | 상태 |
