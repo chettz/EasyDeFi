@@ -32,7 +32,11 @@ export function SupplyBaseUsdcForm({ supplyApy }: { supplyApy: string }) {
         <button type="button" onClick={() => void supply.onMaxAmount()} disabled={supply.maxDisabled} style={buttonStyle}>
           {supply.isMaxQuoting ? "계산 중" : "최대"}
         </button>
-        <button type="submit" disabled={supply.isSupplying} style={buttonStyle}>
+        <button
+          type="submit"
+          disabled={supply.pinLocked || supply.isSupplying}
+          style={supply.pinLocked ? { ...buttonStyle, background: "#d1d6db", color: "#fff", cursor: "default" } : buttonStyle}
+        >
           Supply
         </button>
       </form>
@@ -67,6 +71,7 @@ export function SupplyBaseUsdcForm({ supplyApy }: { supplyApy: string }) {
           cancelLabel="취소"
           warning={null}
           confirmDisabled={
+            supply.pinLocked ||
             supply.feeOverBalance ||
             supply.pendingSupply.fee === "계산 전" ||
             supply.pendingSupply.fee === "계산 중" ||

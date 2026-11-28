@@ -11,10 +11,11 @@ import {
   amountParts,
   detailDate,
   networkName,
-  shortenValue,
   statusClass,
+  wrapAtBytes,
   statusLabel,
 } from "@/features/transactions/display";
+import { TxHashLink } from "@/features/transactions/TxHashLink";
 import { type TransactionDetail } from "@/features/transactions/types";
 
 export default function ProductTransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -97,15 +98,17 @@ export default function ProductTransactionDetailPage({ params }: { params: Promi
           </div>
           <div>
             <dt>보낸 이</dt>
-            <dd>{shortenValue(transaction.sender_address)}</dd>
+            <dd className="tx-wrapped-value">{transaction.sender_address ? wrapAtBytes(transaction.sender_address) : "-"}</dd>
           </div>
           <div>
             <dt>받는 이</dt>
-            <dd>{shortenValue(transaction.recipient_address)}</dd>
+            <dd className="tx-wrapped-value">{transaction.recipient_address ? wrapAtBytes(transaction.recipient_address) : "-"}</dd>
           </div>
           <div>
             <dt>트랜잭션 해시</dt>
-            <dd>{shortenValue(transaction.primary_tx_hash)}</dd>
+            <dd>
+              <TxHashLink network={transaction.network} hash={transaction.primary_tx_hash} />
+            </dd>
           </div>
           <div>
             <dt>트랜잭션 수수료</dt>

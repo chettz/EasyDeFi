@@ -9,6 +9,7 @@ import { getDepositAddress } from "@/lib/deposit/deposit-address";
 import { createPaymasterFeeClient, type PaymasterFeeClient } from "@/lib/paymaster/fee-client";
 import { getPaymasterToken } from "@/lib/paymaster/tokens";
 import { getDepositTokenBalance } from "@/lib/withdraw/token-balance";
+import { PaymentPinCancelled, PaymentPinLocked, PaymentPinNotConfigured, usePaymentPin } from "@/features/payment-pin/PaymentPinProvider";
 import { recordAaveActivity } from "@/features/transactions/record-aave-activity";
 
 const BASE_USDC = getPaymasterToken("base", "USDC");
@@ -53,6 +54,7 @@ function readErrorCode(cause: unknown) {
 
 export function useSupplyBaseUsdc(supplyApy: string) {
   const { authenticated, login, ready, getAccessToken } = usePrivy();
+  const { requireGrant, locked: pinLocked } = usePaymentPin();
   const { accounts, embeddedWallet, walletsReady } = useDepositAccounts();
   const depositAddress = getDepositAddress("base", accounts);
   const [feeClient, setFeeClient] = useState<PaymasterFeeClient | null | undefined>(undefined);
@@ -215,13 +217,13 @@ export function useSupplyBaseUsdc(supplyApy: string) {
     }
   }
 
-  function onSupply(event: FormEvent) {
+  async function onSupply(event: FormEvent) {
     event.preventDefault();
     setSupplyMessage(null);
     setReceivedToken(null);
     setSuccess(null);
     setFailure(null);
-    if (feeOverBalance) return;
+    if (pinLocked || feeOverBalance) return;
 
     const trimmedAmount = supplyAmount.trim();
     const fractionDigits = trimmedAmount.split(".")[1];
@@ -232,6 +234,20 @@ export function useSupplyBaseUsdc(supplyApy: string) {
 
     if (parsedAmount === null || parsedAmount <= BigInt(0) || !feeClient || !BASE_USDC) {
       setSupplyMessage("공급을 시작하지 못했습니다.");
+      return;
+    }
+
+    try {
+      await requireGrant("supply");
+    } catch (cause) {
+      if (cause instanceof PaymentPinCancelled || cause instanceof PaymentPinLocked) return;
+      if (cause instanceof Error && cause.message === "Payment PIN is already open.") return;
+      setSupplyMessage(
+        cause instanceof PaymentPinNotConfigured
+          ? "내 지갑에서 결제 비밀번호를 먼저 설정해 주세요."
+          : "결제 비밀번호를 확인하지 못했습니다.",
+      );
+      if (!(cause instanceof PaymentPinNotConfigured)) console.error(cause);
       return;
     }
 
@@ -247,7 +263,7 @@ export function useSupplyBaseUsdc(supplyApy: string) {
   }
 
   async function onConfirmSupply() {
-    if (!pendingSupply || !feeClient || isSupplying) return;
+    if (pinLocked || !pendingSupply || !feeClient || isSupplying) return;
     const amount = parseSupplyAmount(pendingSupply.amount);
     if (amount === null || amount <= BigInt(0) || feeOverBalance) {
       setPendingSupply(null);
@@ -315,6 +331,7 @@ export function useSupplyBaseUsdc(supplyApy: string) {
     maxDisabled,
     feeOverBalance,
     isSupplying,
+    pinLocked,
     supplyMessage,
     receivedToken,
     pendingSupply,

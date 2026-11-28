@@ -17,6 +17,7 @@ export type ApyPoint = { date: string; apy: string };
 const FAILED = "조회 실패";
 const CHART_WIDTH = 318;
 const CHART_HEIGHT = 101;
+const TONE_COLOR = { up: "#039855", down: "#f04452", flat: "#4e5968" } as const;
 const chartDateFormat = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "long",
@@ -63,6 +64,15 @@ function formatPercent(value: number) {
   return `${rounded.toFixed(places)}%`;
 }
 
+function formatDelta(delta: number) {
+  const rounded = Math.round(Math.abs(delta) * 100) / 100;
+  const places = Number.isInteger(rounded) ? 0 : Number.isInteger(rounded * 10) ? 1 : 2;
+  const body = rounded.toFixed(places);
+  if (delta > 0) return `+${body}%p`;
+  if (delta < 0) return `-${body}%p`;
+  return "0%p";
+}
+
 function formatChartDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -89,13 +99,16 @@ function chartPath(points: ApyPoint[]) {
   const first = plotted[0];
   const baseline = yOf(scale.min).toFixed(1);
   const area = `${line} L${last.x.toFixed(1)} ${baseline} L${first.x.toFixed(1)} ${baseline} Z`;
+  const delta = Math.round((last.apy - first.apy) * 100) / 100;
   return {
     line,
     area,
     last,
+    delta,
+    tone: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
     points: plotted,
     ticks: scale.ticks.map((value) => ({ value, label: formatPercent(value), y: yOf(value) })),
-  };
+  } as const;
 }
 
 export function AaveYieldHero({
@@ -113,6 +126,8 @@ export function AaveYieldHero({
   const requestId = useRef(0);
   const selected = PERIODS.find((item) => item.id === period) ?? PERIODS[3];
   const chart = history ? chartPath(history) : null;
+  const tone = chart?.tone ?? "flat";
+  const toneColor = TONE_COLOR[tone];
   const hover = chart && hoverIndex !== null ? chart.points[hoverIndex] : null;
 
   function hoverChart(event: PointerEvent<HTMLDivElement>) {
@@ -160,11 +175,11 @@ export function AaveYieldHero({
   }
 
   return (
-    <section className="earn-detail-hero" aria-label="연 수익률">
+    <section className={`earn-detail-hero is-${tone}`} aria-label="연 수익률">
       <div className="earn-detail-hero-top">
         <p>
           연 수익률
-          <span className="earn-detail-help earn-detail-help-light" aria-hidden="true">
+          <span className="earn-detail-help" aria-hidden="true">
             ?
           </span>
         </p>
@@ -185,7 +200,15 @@ export function AaveYieldHero({
           ))}
         </div>
       </div>
-      <p className="earn-detail-apy">{apy}</p>
+      <div className="earn-detail-quote">
+        <p className="earn-detail-apy">{apy}</p>
+        {chart && status === "ready" && chart.points.length > 1 ? (
+          <p className="earn-detail-delta">
+            <span>{selected.axis[0]}보다</span>
+            <strong>{formatDelta(chart.delta)}</strong>
+          </p>
+        ) : null}
+      </div>
       <div className={`earn-detail-graph${chart && status === "ready" ? " has-scale" : ""}`}>
         <div className="earn-detail-chart" aria-busy={status === "loading"}>
           {status === "loading" ? (
@@ -217,10 +240,43 @@ export function AaveYieldHero({
                   role="img"
                   aria-label={`${selected.id} 공급 연 수익률 그래프`}
                 >
-                  <path d={chart.area} fill="rgb(255 255 255 / 28%)" />
-                  <path d={chart.line} fill="none" stroke="#fff" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-                  <circle cx={chart.last.x} cy={chart.last.y} r="3" fill="#fff" />
+                  <defs>
+                    <linearGradient id="earn-apy-fill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={toneColor} stopOpacity="0.28" />
+                      <stop offset="100%" stopColor={toneColor} stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {chart.ticks.map((tick) => (
+                    <line
+                      key={tick.label}
+                      x1="0"
+                      x2={CHART_WIDTH}
+                      y1={tick.y}
+                      y2={tick.y}
+                      stroke="#e5e8eb"
+                      strokeWidth="1"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  ))}
+                  <path d={chart.area} fill="url(#earn-apy-fill)" />
+                  <path
+                    d={chart.line}
+                    fill="none"
+                    stroke={toneColor}
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
                 </svg>
+                <span
+                  className="earn-detail-last-dot"
+                  style={{
+                    left: `${(chart.last.x / CHART_WIDTH) * 100}%`,
+                    top: `${(chart.last.y / CHART_HEIGHT) * 100}%`,
+                    background: toneColor,
+                  }}
+                />
                 {hover ? (
                   <>
                     <span
@@ -232,6 +288,7 @@ export function AaveYieldHero({
                       style={{
                         left: `${(hover.x / CHART_WIDTH) * 100}%`,
                         top: `${(hover.y / CHART_HEIGHT) * 100}%`,
+                        background: toneColor,
                       }}
                     />
                     <p

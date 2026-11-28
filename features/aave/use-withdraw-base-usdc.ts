@@ -8,6 +8,7 @@ import { getBaseUsdcWithdrawable, quoteWithdrawBaseUsdcFee, withdrawBaseUsdc } f
 import { getDepositAddress } from "@/lib/deposit/deposit-address";
 import { createPaymasterFeeClient, type PaymasterFeeClient } from "@/lib/paymaster/fee-client";
 import { getPaymasterToken } from "@/lib/paymaster/tokens";
+import { PaymentPinCancelled, PaymentPinLocked, PaymentPinNotConfigured, usePaymentPin } from "@/features/payment-pin/PaymentPinProvider";
 import { recordAaveActivity } from "@/features/transactions/record-aave-activity";
 
 const BASE_USDC = getPaymasterToken("base", "USDC");
@@ -49,6 +50,7 @@ function readErrorCode(cause: unknown) {
 
 export function useWithdrawBaseUsdc() {
   const { authenticated, login, ready, getAccessToken } = usePrivy();
+  const { requireGrant, locked: pinLocked } = usePaymentPin();
   const { accounts, embeddedWallet, walletsReady } = useDepositAccounts();
   const depositAddress = getDepositAddress("base", accounts);
   const [feeClient, setFeeClient] = useState<PaymasterFeeClient | null | undefined>(undefined);
@@ -191,15 +193,29 @@ export function useWithdrawBaseUsdc() {
     setPendingWithdraw({ ...pendingWithdraw, fee: nextFee });
   }, [pendingWithdraw, feeAmount, feeForAmount, feeText, withdrawAmount]);
 
-  function onWithdraw(event: FormEvent) {
+  async function onWithdraw(event: FormEvent) {
     event.preventDefault();
     setWithdrawMessage(null);
     setReceivedUsdc(null);
     setSuccess(null);
     setFailure(null);
-    if (isAmountTooLarge) return;
+    if (pinLocked || isAmountTooLarge) return;
     if (parsedAmount === null || parsedAmount <= BigInt(0) || withdrawable === null || !feeClient || !BASE_USDC) {
       setWithdrawMessage("인출을 시작하지 못했습니다.");
+      return;
+    }
+
+    try {
+      await requireGrant("redeem");
+    } catch (cause) {
+      if (cause instanceof PaymentPinCancelled || cause instanceof PaymentPinLocked) return;
+      if (cause instanceof Error && cause.message === "Payment PIN is already open.") return;
+      setWithdrawMessage(
+        cause instanceof PaymentPinNotConfigured
+          ? "내 지갑에서 결제 비밀번호를 먼저 설정해 주세요."
+          : "결제 비밀번호를 확인하지 못했습니다.",
+      );
+      if (!(cause instanceof PaymentPinNotConfigured)) console.error(cause);
       return;
     }
 
@@ -216,7 +232,7 @@ export function useWithdrawBaseUsdc() {
   }
 
   async function onConfirmWithdraw() {
-    if (!pendingWithdraw || !feeClient || isWithdrawing) return;
+    if (pinLocked || !pendingWithdraw || !feeClient || isWithdrawing) return;
     const amount = parseWithdrawAmount(pendingWithdraw.amount);
     if (amount === null || amount <= BigInt(0) || isAmountTooLarge) {
       setPendingWithdraw(null);
@@ -277,6 +293,7 @@ export function useWithdrawBaseUsdc() {
     setWithdrawAmount,
     isAmountTooLarge,
     isWithdrawing,
+    pinLocked,
     withdrawMessage,
     receivedUsdc,
     pendingWithdraw,

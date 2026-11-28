@@ -4,6 +4,8 @@ import { usePrivy } from "@privy-io/react-auth";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { formatUnits } from "viem";
+import { wrapAtBytes } from "@/features/transactions/display";
+import { TxHashLink } from "@/features/transactions/TxHashLink";
 import {
   ACTIVITY_LABELS,
   ACTIVITY_STATUS_LABELS,
@@ -78,10 +80,8 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
         ["거래 상태", ACTIVITY_STATUS_LABELS[transaction.status]],
         ["거래 일시", new Date(transaction.occurred_at).toLocaleString("ko-KR")],
         ["네트워크", transaction.network],
-        ["보낸 이", transaction.sender_address ?? "-"],
-        ["받는 이", transaction.recipient_address ?? "-"],
-        ["트랜잭션 해시", transaction.primary_tx_hash ?? "-"],
-        ["트랜잭션 수수료", fee],
+        ["보낸 이", transaction.sender_address ? wrapAtBytes(transaction.sender_address) : "-"],
+        ["받는 이", transaction.recipient_address ? wrapAtBytes(transaction.recipient_address) : "-"],
       ]
     : [];
 
@@ -96,9 +96,23 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
           {fields.map(([label, value]) => (
             <div key={label} style={row}>
               <dt>{label}</dt>
-              <dd style={{ margin: 0, textAlign: "right", overflowWrap: "anywhere" }}>{value}</dd>
+              <dd style={{ margin: 0, textAlign: "right", overflowWrap: "anywhere", whiteSpace: "pre-line" }}>{value}</dd>
             </div>
           ))}
+          {transaction ? (
+            <>
+              <div style={row}>
+                <dt>트랜잭션 해시</dt>
+                <dd style={{ margin: 0, textAlign: "right", overflowWrap: "anywhere" }}>
+                  <TxHashLink network={transaction.network} hash={transaction.primary_tx_hash} />
+                </dd>
+              </div>
+              <div style={row}>
+                <dt>트랜잭션 수수료</dt>
+                <dd style={{ margin: 0, textAlign: "right", overflowWrap: "anywhere" }}>{fee}</dd>
+              </div>
+            </>
+          ) : null}
         </dl>
       ) : null}
     </main>

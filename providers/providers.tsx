@@ -5,6 +5,7 @@ import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { baseSepolia, kaia, kairos } from "viem/chains";
 import { RegisterWalletAddresses } from "@/components/RegisterWalletAddresses";
 import { RetryPendingActivities } from "@/components/RetryPendingActivities";
+import { PaymentPinProvider } from "@/features/payment-pin/PaymentPinProvider";
 
 const solanaConnectors = toSolanaWalletConnectors({
   shouldAutoConnect: true,
@@ -44,9 +45,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      <RegisterWalletAddresses />
-      <RetryPendingActivities />
-      {children}
+      <PaymentPinProvider>
+        <RegisterWalletAddresses />
+        <RetryPendingActivities />
+        {children}
+      </PaymentPinProvider>
     </PrivyProvider>
   );
 }

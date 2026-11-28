@@ -39,7 +39,8 @@ function formatAssetUsd(value: number) {
 }
 
 function formatUsdc(value: number, sign: "keep" | "plus" = "keep", fractionDigits = 2) {
-  const text = `${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: Math.min(2, fractionDigits), maximumFractionDigits: fractionDigits })} USDC`;
+  const digits = sign === "plus" ? fractionDigits : Math.min(2, fractionDigits);
+  const text = `${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: fractionDigits })} USDC`;
   if (value < 0) return `-${text}`;
   if (sign === "plus" && value > 0) return `+${text}`;
   return text;

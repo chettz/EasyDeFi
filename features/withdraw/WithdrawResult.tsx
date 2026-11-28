@@ -58,7 +58,7 @@ export function WithdrawSuccess({
           <dt>출금 네트워크</dt>
           <dd>{depositNetworkLabel(completed.network)}</dd>
         </div>
-        <div className="wallet-detail-row move-amount-row">
+        <div className="wallet-detail-row">
           <dt>출금 수량</dt>
           <dd>{formatUnits(completed.amount, 6)} {completed.token}</dd>
         </div>

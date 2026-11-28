@@ -5,6 +5,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useWithdrawBaseUsdc } from "@/features/aave/use-withdraw-base-usdc";
+import { SupplyModeSwitch } from "../mode-switch";
 
 function formatUsdc(value: string) {
   if (!/^\d+(\.\d+)?$/.test(value)) return value;
@@ -42,7 +43,8 @@ export function AaveWithdrawScreen() {
   if (withdraw.success) {
     return (
       <ResultScreen
-        icon="/figma/withdraw-success.svg"
+        className="earn-withdraw-result"
+        icon="/figma/move-success.svg"
         title="USDC 꺼내기 완료"
         rows={[
           ["거래 일시", formatTradeTime(withdraw.success.at)],
@@ -51,7 +53,7 @@ export function AaveWithdrawScreen() {
           ["꺼내고 남은 수량", `${formatUsdc(withdraw.success.remaining)} USDC`],
           ["수수료", withdraw.success.fee.replace(/^약\s/, "")],
         ]}
-        action={<Link href="/product/earn/aave" className="earn-result-dark">확인</Link>}
+        action={<Link href="/product/earn/aave" className="move-pill">확인</Link>}
       />
     );
   }
@@ -108,7 +110,7 @@ export function AaveWithdrawScreen() {
                   type="button"
                   className="earn-supply-confirm"
                   onClick={() => void withdraw.onConfirmWithdraw()}
-                  disabled={!feeReady}
+                  disabled={withdraw.pinLocked || !feeReady}
                 >
                   확인
                 </button>
@@ -131,14 +133,7 @@ export function AaveWithdrawScreen() {
         </svg>
         Aave Base USDC
       </Link>
-      <div className="earn-supply-switch" role="tablist" aria-label="넣기 또는 꺼내기">
-        <Link href="/product/earn/aave/supply" role="tab" aria-selected="false">
-          넣기
-        </Link>
-        <button type="button" role="tab" aria-selected="true">
-          꺼내기
-        </button>
-      </div>
+      <SupplyModeSwitch mode={1} />
       <form className="earn-supply-form" onSubmit={(event) => void withdraw.onWithdraw(event)}>
         <section className="earn-supply-card">
           <p>수량</p>
@@ -164,7 +159,7 @@ export function AaveWithdrawScreen() {
         </section>
         {withdraw.isAmountTooLarge && <p className="wallet-alert" role="alert">꺼낼 수 있는 수량을 넘었어요.</p>}
         {withdraw.withdrawMessage && !withdraw.failure && !withdraw.success && <p className="wallet-alert">{withdraw.withdrawMessage}</p>}
-        <button type="submit" className="earn-detail-submit" disabled={withdraw.isWithdrawing}>
+        <button type="submit" className="earn-detail-submit" disabled={withdraw.pinLocked || withdraw.isWithdrawing}>
           USDC 꺼내기
         </button>
       </form>
@@ -174,6 +169,7 @@ export function AaveWithdrawScreen() {
 }
 
 function ResultScreen({
+  className,
   icon,
   title,
   rows,
@@ -182,6 +178,7 @@ function ResultScreen({
   code,
   action,
 }: {
+  className?: string;
   icon: string;
   title: string;
   rows?: [string, string][];
@@ -191,7 +188,7 @@ function ResultScreen({
   action: ReactNode;
 }) {
   return (
-    <main className="wallet-page earn-supply-result">
+    <main className={`wallet-page earn-supply-result${className ? ` ${className}` : ""}`}>
       <div className="earn-supply-result-body">
         <Image src={icon} alt="" width={64} height={64} />
         <h1>{title}</h1>

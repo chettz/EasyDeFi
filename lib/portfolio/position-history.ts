@@ -73,6 +73,11 @@ function seconds(value: unknown) {
   return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : undefined;
 }
 
+// 예치 직후 지수 반올림은 1센트보다 작다. 그 마이너스는 손실이 아니므로 0으로 보여 준다.
+function shownInterest(value: number) {
+  return value > -0.01 && value < 0 ? 0 : value;
+}
+
 function decimal(value: unknown) {
   const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
   return Number.isFinite(parsed) ? parsed : undefined;
@@ -260,7 +265,7 @@ async function aaveHistory(owner: string, period: HistoryPeriod): Promise<Positi
   const start = rangeStart(period, now, transfers[0]?.time);
   const points = chartFromBalance(current, start, now, transfers, samples, stepFor(period));
   const deposited = transfers.length === 0 ? current : principalOf(transfers, rates, now);
-  return { points, deposited, interest: current - deposited, start, end: now };
+  return { points, deposited, interest: shownInterest(current - deposited), start, end: now };
 }
 
 async function morphoHistory(owner: string, period: HistoryPeriod): Promise<PositionHistory> {
@@ -305,5 +310,5 @@ async function morphoHistory(owner: string, period: HistoryPeriod): Promise<Posi
   if (points.length === 0 || points[points.length - 1].time < now) points.push({ time: now, value });
   else points[points.length - 1] = { time: now, value };
   const domainStart = period === "ALL" ? (points[0]?.time ?? start) : start;
-  return { points, deposited: (current - pnl) / 1_000_000, interest: pnl / 1_000_000, start: domainStart, end: now };
+  return { points, deposited: (current - pnl) / 1_000_000, interest: shownInterest(pnl / 1_000_000), start: domainStart, end: now };
 }

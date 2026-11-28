@@ -471,6 +471,9 @@ export default function LabHome() {
           <Link href="/lab/transactions" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
             거래내역
           </Link>
+          <Link href="/lab/wallet" style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}>
+            내 지갑
+          </Link>
         </p>
       </fieldset>
 

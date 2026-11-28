@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState, type CSSProperties } from "react";
 
 type Tab = {
   label: string;
@@ -27,25 +28,39 @@ const tabs: readonly Tab[] = [
     activeIcon: "/figma/tab-deposit.svg",
     wallet: true,
   },
-  { label: "거래내역", href: "/product/transactions", icon: "/figma/tab-wallet.svg" },
-  { label: "내 자산", href: "/product/assets", icon: "/figma/tab-transfer.svg" },
+  { label: "거래내역", href: "/product/transactions", icon: "/figma/tab-wallet.svg", activeIcon: "/figma/tab-wallet-active.svg" },
+  { label: "내 자산", href: "/product/assets", icon: "/figma/tab-transfer.svg", activeIcon: "/figma/tab-transfer-active.svg" },
 ];
+
+function isActive(tab: Tab, pathname: string) {
+  if (tab.wallet) return ["/product/transfer", "/product/deposit", "/product/withdraw"].includes(pathname);
+  if (tab.href === "/product/earn") return pathname === "/product/earn" || pathname.startsWith("/product/earn/");
+  if (tab.href === "/product/assets") return pathname === "/product/assets" || pathname.startsWith("/product/assets/");
+  if (tab.href === "/product/transactions") {
+    return pathname === "/product/transactions" || pathname.startsWith("/product/transactions/");
+  }
+  return tab.href === pathname;
+}
 
 export default function BottomTabBar() {
   const pathname = usePathname();
+  const index = Math.max(0, tabs.findIndex((tab) => isActive(tab, pathname)));
+  const [shown, setShown] = useState(index);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setShown(index));
+    return () => cancelAnimationFrame(frame);
+  }, [index]);
 
   return (
-    <nav className="wallet-tabbar" aria-label="주요 메뉴">
+    <nav
+      className="wallet-tabbar"
+      aria-label="주요 메뉴"
+      style={{ "--tab-index": shown } as CSSProperties}
+    >
+      <span className="wallet-tabbar-pill" aria-hidden="true" />
       {tabs.map((tab) => {
-        const active = tab.wallet
-          ? ["/product/transfer", "/product/deposit", "/product/withdraw"].includes(pathname)
-          : tab.href === "/product/earn"
-            ? pathname === "/product/earn" || pathname.startsWith("/product/earn/")
-            : tab.href === "/product/assets"
-              ? pathname === "/product/assets" || pathname.startsWith("/product/assets/")
-              : tab.href === "/product/transactions"
-                ? pathname === "/product/transactions" || pathname.startsWith("/product/transactions/")
-                : tab.href === pathname;
+        const active = isActive(tab, pathname);
         const content = (
           <>
             <Image

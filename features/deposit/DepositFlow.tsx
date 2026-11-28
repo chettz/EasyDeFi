@@ -154,21 +154,19 @@ export function DepositFlow({ variant = "product" }: { variant?: "lab" | "produc
         </span>
       </div>
       <div className="wallet-address-box">
-        <div>
-          <span className="wallet-field-label">입금 주소</span>
-          <div className="wallet-address-value">
-            {depositAddress ?? (isLoading ? "확인 중" : "주소 없음")}
-          </div>
+        <span className="wallet-field-label">입금 주소</span>
+        <div className="wallet-address-value">
+          <span>{depositAddress ?? (isLoading ? "확인 중" : "주소 없음")}</span>
+          <button
+            type="button"
+            className="wallet-icon-button"
+            disabled={!depositAddress}
+            onClick={() => void onCopyAddress()}
+            aria-label={copied ? "주소 복사 완료" : "입금 주소 복사"}
+          >
+            <Image src="/figma/move-copy.svg" alt="" width={20} height={20} />
+          </button>
         </div>
-        <button
-          type="button"
-          className="wallet-icon-button"
-          disabled={!depositAddress}
-          onClick={() => void onCopyAddress()}
-          aria-label={copied ? "주소 복사 완료" : "입금 주소 복사"}
-        >
-          <Image src="/figma/move-copy.svg" alt="" width={20} height={20} />
-        </button>
       </div>
       {copied && (
         <p className="wallet-helper" role="status">

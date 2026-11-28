@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_KR } from "next/font/google";
 import "./globals.css";
+import { AgentationDev } from "@/components/AgentationDev";
 import Providers from "@/providers/providers";
 
 const ibmPlexSansKr = IBM_Plex_Sans_KR({
@@ -14,11 +15,18 @@ export const metadata: Metadata = {
   description: "쉽게 사용하는 디파이 지갑",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" className={`${ibmPlexSansKr.variable} h-full`}>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
+        <AgentationDev />
       </body>
     </html>
   );

@@ -28,8 +28,8 @@ function isProduct(value: string): value is PortfolioProduct {
   return value in PORTFOLIO_PRODUCTS;
 }
 
-function formatUsd(value: number) {
-  const text = Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatUsd(value: number, digits = 2) {
+  const text = Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
   return value < 0 ? `-$${text}` : `$${text}`;
 }
 
@@ -172,7 +172,7 @@ export default function PortfolioProductPage({ params }: { params: Promise<{ pro
           </div>
           <div style={row}>
             <span>이자</span>
-            <strong>{formatUsd(history.interest)}</strong>
+            <strong>{formatUsd(history.interest, 6)}</strong>
           </div>
         </div>
       ) : null}

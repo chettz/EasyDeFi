@@ -31,7 +31,11 @@ export function WithdrawBaseUsdcForm() {
         <button type="button" onClick={withdraw.onMaxAmount} disabled={withdraw.maxDisabled} style={buttonStyle}>
           최대
         </button>
-        <button type="submit" disabled={withdraw.isWithdrawing} style={buttonStyle}>
+        <button
+          type="submit"
+          disabled={withdraw.pinLocked || withdraw.isWithdrawing}
+          style={withdraw.pinLocked ? { ...buttonStyle, background: "#d1d6db", color: "#fff", cursor: "default" } : buttonStyle}
+        >
           Withdraw
         </button>
       </form>
@@ -62,6 +66,7 @@ export function WithdrawBaseUsdcForm() {
           cancelLabel="취소"
           warning={null}
           confirmDisabled={
+            withdraw.pinLocked ||
             withdraw.pendingWithdraw.fee === "계산 전" ||
             withdraw.pendingWithdraw.fee === "계산 중" ||
             withdraw.pendingWithdraw.fee === "수수료를 계산하지 못했습니다."

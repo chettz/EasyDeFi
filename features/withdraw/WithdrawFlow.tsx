@@ -26,6 +26,7 @@ import {
   WithdrawSuccess,
   type CompletedWithdraw,
 } from "@/features/withdraw/WithdrawResult";
+import { PaymentPinCancelled, PaymentPinLocked, PaymentPinNotConfigured, usePaymentPin } from "@/features/payment-pin/PaymentPinProvider";
 import { recordWithdrawActivity } from "@/features/transactions/record-withdraw-activity";
 import { getDepositAddress } from "@/lib/deposit/deposit-address";
 import {
@@ -122,6 +123,7 @@ function parseWithdrawAmount(value: string): bigint | null {
 
 export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "product" }) {
   const { authenticated, getAccessToken } = usePrivy();
+  const { requireGrant, locked: pinLocked } = usePaymentPin();
   const { accounts, embeddedWallet, walletsReady } = useDepositAccounts();
   const [token, setToken] = useState<DepositToken>("USDC");
   const [network, setNetwork] = useState<DepositNetwork>("이더리움");
@@ -594,11 +596,12 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
     }
   }
 
-  // 수량과 주소가 유효하면 확인 팝업을 연다. 트랜잭션은 보내지 않는다.
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  // 수량과 주소가 유효하면 비밀번호를 받은 뒤 확인 팝업을 연다. 트랜잭션은 보내지 않는다.
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const to = recipient;
     if (
+      pinLocked ||
       isUnsupportedSolana ||
       isAmountInvalid ||
       isAmountNonPositive ||
@@ -617,6 +620,25 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
 
     setError(null);
     setIsSending(false);
+    const sends =
+      isFeeNetwork(network) ||
+      (isArcFeeNetwork(network) && token === "USDC") ||
+      (isKaiaFeeNetwork(network) && token === "USDT" && embeddedWallet !== undefined && isAddress(embeddedWallet.address));
+    if (sends) {
+      try {
+        await requireGrant("withdraw");
+      } catch (cause) {
+        if (cause instanceof PaymentPinCancelled || cause instanceof PaymentPinLocked) return;
+        if (cause instanceof Error && cause.message === "Payment PIN is already open.") return;
+        setError(
+          cause instanceof PaymentPinNotConfigured
+            ? "내 지갑에서 결제 비밀번호를 먼저 설정해 주세요."
+            : "결제 비밀번호를 확인하지 못했습니다.",
+        );
+        if (!(cause instanceof PaymentPinNotConfigured)) console.error(cause);
+        return;
+      }
+    }
     // 현재 수량 견적이 있으면 그 숫자를 넣고, 아직이면 계산중.. 솔라나·Devnet은 견적이 없다.
     const fee =
       isSolanaNetwork
@@ -631,7 +653,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
 
   // 확인을 누르면 페이마스터, 아크, 카이아를 전송한다. 솔라나는 아직 보내지 않는다.
   async function onConfirmWithdraw(request = pendingWithdraw) {
-    if (!request || isSending) return;
+    if (pinLocked || !request || isSending) return;
     const parsed = parseWithdrawAmount(request.amount);
     if (
       parsed === null ||
@@ -648,7 +670,6 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
     const recipient = request.to;
     const sentToken = request.token;
     const amountToSend = parsed;
-
     function failTransfer() {
       setFailedWithdraw(request);
       setFailureMessage("주소와 네트워크를 확인하고 다시 시도해 주세요.");
@@ -964,6 +985,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
             <button
               type="submit"
               disabled={
+                pinLocked ||
                 isUnsupportedSolana ||
                 isBalanceLoading ||
                 isAmountInvalid ||
@@ -973,7 +995,12 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
                 isArcFeeOverBalance ||
                 isKaiaFeeOverBalance
               }
-              style={{ border: "1px solid #444", padding: "0.5rem 0.75rem" }}
+              style={{
+                border: "1px solid #444",
+                padding: "0.5rem 0.75rem",
+                background: pinLocked ? "#d1d6db" : undefined,
+                color: pinLocked ? "#fff" : undefined,
+              }}
             >
               출금 진행
             </button>
@@ -986,6 +1013,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
           <WithdrawConfirmModal
             pending={pendingWithdraw}
             isSending={isSending}
+            confirmDisabled={pinLocked}
             onConfirm={() => void onConfirmWithdraw()}
             onCancel={() => {
               setPendingWithdraw(null);
@@ -1046,8 +1074,8 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
           }}
           onSelect={(id) => setNetwork(id as DepositNetwork)}
         />
-        <div className="wallet-field">
-          <label htmlFor="withdraw-recipient">출금할 주소</label>
+        <label className="move-entry" htmlFor="withdraw-recipient">
+          <span>출금할 주소</span>
           <input
             id="withdraw-recipient"
             name="to"
@@ -1057,9 +1085,9 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
             placeholder="받는 주소"
             autoComplete="off"
           />
-        </div>
-        <div className="wallet-field">
-          <label htmlFor="withdraw-amount">출금할 수량</label>
+        </label>
+        <label className="move-entry" htmlFor="withdraw-amount">
+          <span>출금할 수량</span>
           <input
             id="withdraw-amount"
             name="amount"
@@ -1069,7 +1097,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
             onChange={(event) => setAmount(limitWithdrawAmountInput(event.target.value))}
             placeholder="0.00"
           />
-        </div>
+        </label>
         <button
           type="button"
           className="wallet-fee-line wallet-max-button"
@@ -1115,6 +1143,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
           type="submit"
           className="move-pill"
           disabled={
+            pinLocked ||
             isUnsupportedSolana ||
             isBalanceLoading ||
             isAmountInvalid ||
@@ -1132,6 +1161,7 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
         <WithdrawConfirmModal
           pending={pendingWithdraw}
           isSending={isSending}
+          confirmDisabled={pinLocked}
           contained
           rows={[
             { label: "출금하는 수량", value: `${pendingWithdraw.amount} ${pendingWithdraw.token}` },
@@ -1140,7 +1170,6 @@ export function WithdrawFlow({ variant = "product" }: { variant?: "lab" | "produ
               value: pendingWithdraw.to.length > 12
                 ? `${pendingWithdraw.to.slice(0, 6)}…${pendingWithdraw.to.slice(-4)}`
                 : pendingWithdraw.to,
-              boxed: true,
             },
             { label: "출금 네트워크", value: depositNetworkLabel(pendingWithdraw.network) },
             {

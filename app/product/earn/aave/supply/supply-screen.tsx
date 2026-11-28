@@ -5,6 +5,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FEE_USDC_SHORT_MESSAGE, useSupplyBaseUsdc } from "@/features/aave/use-supply-base-usdc";
+import { SupplyModeSwitch } from "../mode-switch";
 
 function formatUsdc(value: string) {
   if (!/^\d+(\.\d+)?$/.test(value)) return value;
@@ -48,7 +49,7 @@ export function AaveSupplyScreen({ supplyApy, referenceTime }: { supplyApy: stri
       : "확인하지 못했어요";
     return (
       <ResultScreen
-        icon="/figma/success.svg"
+        icon="/figma/supply-success.svg"
         title="USDC 넣기 완료"
         rows={[
           ["거래 일시", formatTradeTime(supply.success.at)],
@@ -118,7 +119,7 @@ export function AaveSupplyScreen({ supplyApy, referenceTime }: { supplyApy: stri
                   type="button"
                   className="earn-supply-confirm"
                   onClick={() => void supply.onConfirmSupply()}
-                  disabled={!feeReady || supply.feeOverBalance}
+                  disabled={supply.pinLocked || !feeReady || supply.feeOverBalance}
                 >
                   확인
                 </button>
@@ -141,14 +142,7 @@ export function AaveSupplyScreen({ supplyApy, referenceTime }: { supplyApy: stri
         </svg>
         Aave Base USDC
       </Link>
-      <div className="earn-supply-switch" role="tablist" aria-label="넣기 또는 꺼내기">
-        <button type="button" role="tab" aria-selected="true">
-          넣기
-        </button>
-        <Link href="/product/earn/aave/withdraw" role="tab" aria-selected="false">
-          꺼내기
-        </Link>
-      </div>
+      <SupplyModeSwitch mode={0} />
       <form className="earn-supply-form" onSubmit={(event) => void supply.onSupply(event)}>
         <section className="earn-supply-card">
           <p>수량</p>
@@ -179,7 +173,7 @@ export function AaveSupplyScreen({ supplyApy, referenceTime }: { supplyApy: stri
         </section>
         {supply.feeOverBalance && <p className="wallet-alert" role="alert">{FEE_USDC_SHORT_MESSAGE}</p>}
         {supply.supplyMessage && !supply.failure && !supply.success && <p className="wallet-alert">{supply.supplyMessage}</p>}
-        <button type="submit" className="earn-detail-submit" disabled={supply.isSupplying}>
+        <button type="submit" className="earn-detail-submit" disabled={supply.pinLocked || supply.isSupplying}>
           USDC 넣기
         </button>
       </form>

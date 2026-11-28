@@ -58,10 +58,35 @@ export function networkName(network: string) {
   return network === "base" ? "Base" : network;
 }
 
-export function shortenValue(value: string | null) {
-  if (!value) return "-";
-  if (value.startsWith("0x") && value.length > 12) return `${value.slice(0, 6)}…${value.slice(-4)}`;
-  return value;
+const EXPLORER_TX_URLS: Record<string, (hash: string) => string> = {
+  이더리움: (hash) => `https://etherscan.io/tx/${hash}`,
+  sepolia: (hash) => `https://sepolia.etherscan.io/tx/${hash}`,
+  base: (hash) => `https://basescan.org/tx/${hash}`,
+  baseSepolia: (hash) => `https://sepolia.basescan.org/tx/${hash}`,
+  카이아: (hash) => `https://kaiascan.io/tx/${hash}`,
+  kaiaKairos: (hash) => `https://kairos.kaiascan.io/tx/${hash}`,
+  아크: (hash) => `https://explorer.arc.io/tx/${hash}`,
+  arcTestnet: (hash) => `https://testnet.arcscan.app/tx/${hash}`,
+  솔라나: (hash) => `https://solscan.io/tx/${hash}`,
+  Devnet: (hash) => `https://solscan.io/tx/${hash}?cluster=devnet`,
+};
+
+export function explorerTxUrl(network: string, hash: string) {
+  return EXPLORER_TX_URLS[network]?.(hash) ?? null;
+}
+
+// 16진수 주소는 두 글자가 1바이트다. 그 외 주소는 한 글자를 1바이트로 센다.
+export function wrapAtBytes(value: string, bytes = 10) {
+  if (bytes <= 0) return value;
+  const hexBody = /^0x([0-9a-fA-F]+)$/.exec(value)?.[1];
+  const source = hexBody ?? value;
+  const size = hexBody ? bytes * 2 : bytes;
+  const lines: string[] = [];
+  for (let index = 0; index < source.length; index += size) {
+    const chunk = source.slice(index, index + size);
+    lines.push(hexBody && index === 0 ? `0x${chunk}` : chunk);
+  }
+  return lines.join("\n");
 }
 
 export function statusClass(status: ActivityStatus) {
